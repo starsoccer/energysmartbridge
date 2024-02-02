@@ -162,6 +162,20 @@ namespace EnergySmartBridge.MQTT
             }.Init(waterHeater, "Lower Temperature");
         }
 
+        public static Number ToUpdateRateConfig(this WaterHeaterInput waterHeater)
+        {
+            return new Number
+            {
+                state_topic = waterHeater.ToTopic(Topic.updaterate_state),
+                command_topic = waterHeater.ToTopic(Topic.updaterate_command),
+                min = 30,
+                max = 300,
+                mode = Number.DisplayMode.box,
+                unit_of_measurement = "s",
+                entity_category = Device.EntityCategory.config,
+            }.Init(waterHeater, "Update Rate");
+        }
+
         public static BinarySensor ToDryFireConfig(this WaterHeaterInput waterHeater)
         {
             return new BinarySensor

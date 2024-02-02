@@ -60,6 +60,7 @@
     <Compile Include="MQTT\Device.cs" />
     <Compile Include="MQTT\DeviceRegistry.cs" />
     <Compile Include="MQTT\MappingExtensions.cs" />
+    <Compile Include="MQTT\Number.cs" />
     <Compile Include="MQTT\Sensor.cs" />
     <Compile Include="MQTT\Topic.cs" />
     <Compile Include="Program.cs" />

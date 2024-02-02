@@ -230,6 +230,9 @@ namespace EnergySmartBridge.Modules
             PublishAsync($"{Global.mqtt_discovery_prefix}/sensor/{waterHeater.DeviceText}/lowertemp/config",
                 JsonConvert.SerializeObject(waterHeater.ToLowerTempConfig()));
 
+            PublishAsync($"{Global.mqtt_discovery_prefix}/number/{waterHeater.DeviceText}/updaterate/config",
+                JsonConvert.SerializeObject(waterHeater.ToUpdateRateConfig()));
+
             PublishAsync($"{Global.mqtt_discovery_prefix}/binary_sensor/{waterHeater.DeviceText}/dryfire/config",
                 JsonConvert.SerializeObject(waterHeater.ToDryFireConfig()));
 
