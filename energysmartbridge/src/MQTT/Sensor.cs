@@ -8,7 +8,9 @@ namespace EnergySmartBridge.MQTT
         [JsonConverter(typeof(StringEnumConverter))]
         public enum DeviceClass
         {
-            temperature
+            temperature,
+            @enum,
+            signal_strength,
         }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
