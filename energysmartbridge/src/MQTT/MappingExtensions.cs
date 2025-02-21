@@ -16,6 +16,11 @@ namespace EnergySmartBridge.MQTT
             return waterHeater.DeviceText.Substring(waterHeater.DeviceText.Length - 4) + " Water Heater";
         }
 
+        public static List<string> GetSupportedModes(this WaterHeaterInput waterHeater)
+        {
+            return waterHeater.AvailableModes.Split(',').ToList();
+        }
+
         public static Climate ToThermostatConfig(this WaterHeaterInput waterHeater)
         {
             Climate ret = new Climate

@@ -80,7 +80,9 @@ If you've done all of this correctly, the controller should begin reporting data
 | ------------- | ------------- |
 | heat_pump  | Efficiency  |
 | eco | Hybrid |
+| eco | EnergySmart |
 | electric  | Electric  |
+| electric  | Standard  |
 | off  | Vaction  |
 
 For this reason, there is another sensor called, `Water Heater Raw Mode` included that will report the mode exactly as reported by the water heater rather than the translated mode

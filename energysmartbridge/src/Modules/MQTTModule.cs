@@ -36,6 +36,8 @@ namespace EnergySmartBridge.Modules
 
         private readonly ConcurrentDictionary<string, Queue<WaterHeaterOutput>> connectedModules = new ConcurrentDictionary<string, Queue<WaterHeaterOutput>>();
 
+        private readonly ConcurrentDictionary<string, List<string>> supportedModesByModule = new ConcurrentDictionary<string, List<string>>();
+
         private readonly AutoResetEvent trigger = new AutoResetEvent(false);
 
         public MQTTModule(WebServerModule webServer)
@@ -143,27 +145,44 @@ namespace EnergySmartBridge.Modules
                 }
                 else if (topic == Topic.mode_command)
                 {
-                    log.Debug($"Queued {id} Mode: {payload}");
+                    log.Debug($"Queueing {id} Mode: {payload}");
 
-                    string heater_mode = "off";
-                    switch(payload) {
-                        case "heat_pump":
-                            heater_mode = "Efficiency";
-                            break;
-                        case "eco":
-                            heater_mode = "Hybrid";
-                            break;
-                        case "electric":
-                            heater_mode = "Electric";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    connectedModules[id].Enqueue(new WaterHeaterOutput()
+                    if(supportedModesByModule.ContainsKey(id))
                     {
-                        Mode = heater_mode
-                    });
+                         List<string> supported_modes = supportedModesByModule[id];                
+
+                        string heater_mode = "off";
+                        switch(payload) {
+                            case "heat_pump":
+                                heater_mode = "Efficiency";
+                                break;
+                            case "eco":
+                                if(supported_modes.Contains('Hybrid')) {
+                                    heater_mode = "Hybrid";
+                                } else {
+                                    heater_mode = "EnergySmart";
+                                }
+                                break;
+                            case "electric":
+                                if(supported_modes.Contains('Electric')) {
+                                    heater_mode = "Electric";
+                                } else {
+                                    heater_mode = "Standard";
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+
+                        log.Debug($"Converted requested mode from: {payload} to: {heater_mode}");
+
+                        connectedModules[id].Enqueue(new WaterHeaterOutput()
+                        {
+                            Mode = heater_mode
+                        });
+                    } else {
+                       log.Error($"Unable to lookup supported modes"); 
+                    }
                 }
                 else if (topic == Topic.setpoint_command &&
                     double.TryParse(payload, out double setPoint) && setPoint >= 80 && setPoint <= 150)
@@ -213,6 +232,8 @@ namespace EnergySmartBridge.Modules
 
         private void PublishWaterHeater(WaterHeaterInput waterHeater)
         {
+            supportedModesByModule.AddOrUpdate(waterHeater.DeviceText, (k,v) => waterHeater.GetSupportedModes(), (k,v) => waterHeater.GetSupportedModes());
+
             PublishAsync($"{Global.mqtt_discovery_prefix}/water_heater/{waterHeater.DeviceText}/config",
                 JsonConvert.SerializeObject(waterHeater.ToThermostatConfig()));
 
