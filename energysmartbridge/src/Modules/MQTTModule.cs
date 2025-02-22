@@ -157,14 +157,14 @@ namespace EnergySmartBridge.Modules
                                 heater_mode = "Efficiency";
                                 break;
                             case "eco":
-                                if(supported_modes.Contains('Hybrid')) {
+                                if(supported_modes.Contains("Hybrid")) {
                                     heater_mode = "Hybrid";
                                 } else {
                                     heater_mode = "EnergySmart";
                                 }
                                 break;
                             case "electric":
-                                if(supported_modes.Contains('Electric')) {
+                                if(supported_modes.Contains("Electric")) {
                                     heater_mode = "Electric";
                                 } else {
                                     heater_mode = "Standard";
