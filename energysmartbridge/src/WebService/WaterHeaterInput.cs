@@ -17,8 +17,6 @@
         public string LeakDetect { get; set; } // NotDetected
         public int MaxSetPoint { get; set; } // 120
         public string Grid { get; set; } // Enabled
-        public string AirFilterStatus { get; set; } // OK
-        public bool CondensePumpFail { get; set; } // False
         public string AvailableModes { get; set; } // Standard,Vacation,EnergySmart
         public bool SystemInHeating { get; set; } // False
         public string HotWaterVol { get; set; } // High
@@ -28,14 +26,17 @@
         public string TankSensorFail { get; set; } // None
         public bool EcoError { get; set; } // False
         public string MasterDispFail { get; set; } // None
-        public string CompSensorFail { get; set; } // None
-        public string SysSensorFail { get; set; } // None
-        public string SystemFail { get; set; } // None
         public int UpperTemp { get; set; } // 122
         public int LowerTemp { get; set; } // 104
         public string FaultCodes { get; set; } // 0
         public string UnConnectNumber { get; set; } // 0
         public string AddrData { get; set; } // *Two strings*
         public string SignalStrength { get; set; } // -46
+
+        public string? AirFilterStatus { get; set; } // OK
+        public bool? CondensePumpFail { get; set; } // False
+        public string? CompSensorFail { get; set; } // None
+        public string? SysSensorFail { get; set; } // None
+        public string? SystemFail { get; set; } // None
     }
 }
