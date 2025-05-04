@@ -215,7 +215,7 @@ export class WaterHeater {
             // Mode Config
             mode_state_topic: `energysmartbridge/${this.deviceId}/mode`,
             mode_state_template: this.generateModeMappingTemplate(false),
-            modes: ["eco", "electric", "off"], // list of supported modes
+            modes: this.availableModes.filter(mode => mode in MODE_MAPPING).map(mode => MODE_MAPPING[mode]), // dynamically built list of supported modes
 
             mode_command_topic: `energysmartbridge/${this.deviceId}/commands/mode`,
             mode_command_template: this.generateModeMappingTemplate(true),
