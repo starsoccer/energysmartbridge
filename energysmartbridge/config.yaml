@@ -1,6 +1,6 @@
 name: "Energy Smart Bridge"
 description: "Energy Smart Bridge"
-version: "1.0.8"
+version: "1.0.9"
 slug: "energy_smart_bridge"
 image: "ghcr.io/starsoccer/energysmartbridge/{arch}"
 init: false
