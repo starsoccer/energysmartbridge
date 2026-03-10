@@ -45,7 +45,7 @@ export class BaseSensor {
             state_topic: this.createStateTopic(),
             unique_id: `${this.waterHeater.deviceId}-${this.name}`,
             name: READABLE_MAPPING[this.name],
-            object_id: `${this.waterHeater.deviceId}_${READABLE_MAPPING[this.name].replaceAll(" ", "_")}`,
+            default_entity_id: `${this.waterHeater.deviceId}_${READABLE_MAPPING[this.name].replaceAll(" ", "_")}`,
             ...this.waterHeater.generateDeviceConfig(),
         };
 

@@ -132,8 +132,10 @@ export class WaterHeater {
                     case 'WifiFwVer':
                     case 'UnConnectNumber':
                     case 'AddrData':
-                    case 'SignalStrength':
                         await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: true});
+                        break;
+                    case 'SignalStrength':
+                        await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: true, unit: "dBm"});
                         break;
                     case 'UpdateRate':
                         await this.createUpdateSensor(queryParams, key, NumberSensor, {isDiagnostic: true, max: 600, min: 30});
