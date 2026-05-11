@@ -12,11 +12,14 @@ RUN npx postject dist NODE_SEA_BLOB dist.blob --sentinel-fuse NODE_SEA_FUSE_fce6
 
 FROM nginx:1.24.0
 
-RUN apt-get update && apt-get install -y openssl && apt-get install -y nodejs && apt-get install -y npm
+RUN apt-get update && apt-get install -y openssl
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
 RUN openssl req  -nodes -new -x509 -sha1 -subj '/CN=energysmartwaterheater.com' -keyout /etc/nginx/energysmartwaterheater.com.key -out /etc/nginx/energysmartwaterheater.com.crt -days 3650
+
+COPY --from=build /usr/local/bin/node /usr/local/bin/node
+COPY --from=build /build/node_modules /node_modules
 
 COPY --from=build /build/dist ./app
 COPY run.sh .

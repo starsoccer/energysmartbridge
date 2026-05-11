@@ -2,22 +2,20 @@ import { CONFIG } from './config.js';
 import { LOGGER } from "./logger.js";
 import { DEVICE_CLASS_MAPPING, READABLE_MAPPING } from './mappings.js';
 
-export class BaseSensor {
+export class BaseEntity {
     name;
     value;
     waterHeater;
     diagnostic;
-    inverse;
 
     sensorType;
 
-    constructor (name, waterHeater, value, mqtt, options = {}) {
+    constructor (name, waterHeater, value, mqtt, config = {}) {
         this.name = name;
         this.waterHeater = waterHeater;
         this.value = value;
         this.mqtt = mqtt;
-        this.diagnostic = options.isDiagnostic || false;
-        this.inverse = options.inverse || false;
+        this.config = config;
     }
 
     async bootstrap () {
@@ -40,28 +38,29 @@ export class BaseSensor {
         return `${mqtt_prefix}/${this.waterHeater.deviceId}/${this.name}`
     }
 
-    async publishConfig () {
+    composeConfig (entityConfig = {}) {
         const payload = {
             state_topic: this.createStateTopic(),
             unique_id: `${this.waterHeater.deviceId}-${this.name}`,
             name: READABLE_MAPPING[this.name],
             default_entity_id: `${this.waterHeater.deviceId}_${READABLE_MAPPING[this.name].replaceAll(" ", "_")}`,
+            ...entityConfig,
             ...this.waterHeater.generateDeviceConfig(),
         };
-
-        if (this.diagnostic) {
-            payload.entity_category = 'diagnostic'
-        }
 
         if (this.name in DEVICE_CLASS_MAPPING) {
             payload.device_class = DEVICE_CLASS_MAPPING[this.name];
         }
 
+        return {...payload, ...this.config};
+    }
+
+    async publishConfig () {
         const topic = this.createConfigTopic();
         
         LOGGER.trace({message: "Publishing config", topic, name: this.name});
 
-        await this.mqtt.publish(topic, JSON.stringify(payload));
+        await this.mqtt.publish(topic, JSON.stringify(this.composeConfig()));
     }
 
     async publishState () {

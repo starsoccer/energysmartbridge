@@ -4,9 +4,10 @@ import { LOGGER } from './logger.js';
 
 export class MQTT {
     connection;
+    optimistic;
 
     constructor (WATER_HEATERS) {
-        const { mqtt_host, mqtt_port, mqtt_username, mqtt_password } = CONFIG();
+        const { mqtt_host, mqtt_port, mqtt_username, mqtt_password, mqtt_optimistic } = CONFIG();
 
         this.connection = mqtt.connect(`mqtt://${mqtt_host}:${mqtt_port}`, {
             username: mqtt_username,
@@ -15,6 +16,8 @@ export class MQTT {
         });
         this.connection.on('message', (topic, message) => this.onMessage(WATER_HEATERS, topic, message));
         this.connection.on('error', this.onError);
+
+        this.optimistic = mqtt_optimistic;
     }
 
     onError (error) {

@@ -43,7 +43,6 @@ export const MAPPING = {
     UnConnectNumber: 'unConnectNumber',
     AddrData: 'addressData',
     SignalStrength: 'signalStrength',
-    Units: 'units',
 };
 
 export const READABLE_MAPPING = {

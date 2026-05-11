@@ -1,16 +1,14 @@
-import { BaseSensor } from './baseSensor.js';
+import { BaseEntity } from './baseEntity.js';
 
-export class BinarySensor extends BaseSensor {
+export class BinarySensor extends BaseEntity {
     sensorType = "binary_sensor";
 
-    constructor (name, waterHeater, value, mqtt, options = {}) {
-        super(name, waterHeater, value, mqtt, options);
+    inverse;
+    
+    constructor (name, waterHeater, value, mqtt, config = {}, inverse = false) {
+        super(name, waterHeater, value, mqtt, config);
+        this.inverse = inverse || false;
         this.value = this.convertValue(this.value);
-    }
-
-    async bootstrap () {
-        await this.publishConfig();
-        await this.publishState();
     }
 
     convertValue (value) {
@@ -32,7 +30,6 @@ export class BinarySensor extends BaseSensor {
     }
 
     async updateValue (value) {
-        this.value = this.convertValue(value);
-        await this.publishState();
+        await super.updateValue(this.convertValue(value));
     }
 }

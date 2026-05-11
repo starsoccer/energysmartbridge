@@ -2,7 +2,7 @@ import { BinarySensor } from "./binarySensor.js";
 import { LOGGER } from "./logger.js";
 import { Sensor } from "./sensor.js";
 import { MAPPING, MODE_MAPPING } from './mappings.js';
-import { NumberSensor } from "./numberSensor.js";
+import { Number as NumberEntity } from "./number.js";
 
 export const COMMAND_MAPPING = {
     mode: 'Mode',
@@ -17,8 +17,8 @@ export class WaterHeater {
 
 
     moduleAPI;
-    moduleFirmwareVersion; 
-    masterFirmwareVersion; 
+    moduleFirmwareVersion;
+    masterFirmwareVersion;
     masterModelId;
     displayFirmwareVersion;
     wifiFirmwareVersion;
@@ -41,7 +41,6 @@ export class WaterHeater {
     ecoError;
     masterDisplayFail;
     systemSensorFail;
-    systemSensorFail;
     systemFail;
     upperTemperature;
     lowerTemperature;
@@ -50,44 +49,60 @@ export class WaterHeater {
     addressData;
     signalStrength;
 
-    constructor (mqtt) {
+    constructor(mqtt) {
         this.mqtt = mqtt;
     }
 
-    async bootstrap (queryParams) {
+    async bootstrap(queryParams) {
         await this.convertQueryParams(queryParams);
         await this.createHomeAssistantConfig();
         await this.listenForCommands();
     }
 
-    async createUpdateSensor (queryParams, key, type, options = {}) {
-        LOGGER.trace({message: "Converting key to sensor", key});
+    async createUpdateSensor(queryParams, key, type, config = {}, ...args) {
+        LOGGER.trace({ message: "Converting key to sensor", key });
 
         if (MAPPING[key] in this.sensors) {
             await this.sensors[MAPPING[key]].updateValue(queryParams[key]);
         } else {
-            this.sensors[MAPPING[key]] = new type(MAPPING[key], this, queryParams[key], this.mqtt, options);
+            this.sensors[MAPPING[key]] = new type(MAPPING[key], this, queryParams[key], this.mqtt, config, ...args);
             await this.sensors[MAPPING[key]].bootstrap();
         }
     }
 
-    async convertQueryParams (queryParams) {
+    async convertQueryParams(queryParams) {
         const keys = Object.keys(queryParams);
 
         // Do device id first since we need it to create all the other sensors
         if (keys.includes('DeviceText')) {
-            LOGGER.trace({message: 'Setting device id', deviceId: queryParams['DeviceText']});
+            LOGGER.trace({ message: 'Setting device id', deviceId: queryParams['DeviceText'] });
             this[MAPPING['DeviceText']] = queryParams['DeviceText'];
         }
 
-        const unit = ('Units' in queryParams ? `°${queryParams['Units']}` : '°F');
-        LOGGER.trace({message: 'Got Unit', unit});
+        // Process Units before the main loop so the unit symbol is available
+        // for temperature sensor creation (LowerTemp, UpperTemp, MaxSetPoint)
+        if ('Units' in queryParams) {
+            LOGGER.trace({ message: 'Got Unit', unit: queryParams['Units'] });
+        } else {
+            LOGGER.warn({ message: 'No Unit provided, defaulting to System' });
+        }
+
+        if (this.units !== queryParams['Units']) {
+            this.units = queryParams['Units'];
+            await this.createHomeAssistantConfig(); // Regenerate HA config to update unit symbols
+        }
+
+        const unit = this.units ? `°${this.units}` : undefined;
 
         for (const key of keys) {
-            LOGGER.trace({message: "Converting key", key});
+            LOGGER.trace({ message: "Converting key", key });
 
             if (key in MAPPING) {
                 switch (key) {
+                    case 'DeviceText':
+                    case 'Units':
+                        // Already handled before this loop; skip.
+                        break;
                     case 'AvailableModes':
                         this[MAPPING[key]] = queryParams[key].split(',');
                         break;
@@ -110,19 +125,19 @@ export class WaterHeater {
                     case 'SysSensorFail':
                     case 'SystemFail':
                     case 'CondensePumpFail':
-                        await this.createUpdateSensor(queryParams, key, BinarySensor, {isDiagnostic: false});
+                        await this.createUpdateSensor(queryParams, key, BinarySensor);
                         break;
                     case 'AirFilterStatus':
-                        await this.createUpdateSensor(queryParams, key, BinarySensor, {isDiagnostic: false, inverse: true});
+                        await this.createUpdateSensor(queryParams, key, BinarySensor, {}, true);
                         break;
                     case 'FaultCodes':
                     case 'HotWaterVol':
-                        await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: false});
+                        await this.createUpdateSensor(queryParams, key, Sensor);
                         break;
                     case 'LowerTemp':
                     case 'UpperTemp':
                     case 'MaxSetPoint':
-                        await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: false, unit});
+                        await this.createUpdateSensor(queryParams, key, Sensor, { unit_of_measurement: unit, state_class: 'measurement' });
                         break;
                     case 'ModuleApi':
                     case 'ModFwVer':
@@ -132,25 +147,25 @@ export class WaterHeater {
                     case 'WifiFwVer':
                     case 'UnConnectNumber':
                     case 'AddrData':
-                        await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: true});
+                        await this.createUpdateSensor(queryParams, key, Sensor, { entity_category: 'diagnostic' });
                         break;
                     case 'SignalStrength':
-                        await this.createUpdateSensor(queryParams, key, Sensor, {isDiagnostic: true, unit: "dBm"});
+                        await this.createUpdateSensor(queryParams, key, Sensor, { entity_category: 'diagnostic', unit_of_measurement: 'dBm', state_class: 'measurement' });
                         break;
                     case 'UpdateRate':
-                        await this.createUpdateSensor(queryParams, key, NumberSensor, {isDiagnostic: true, max: 600, min: 30});
+                        await this.createUpdateSensor(queryParams, key, NumberEntity, { entity_category: 'config', unit_of_measurement: 's', optimistic: this.mqtt.optimistic }, 30, 600);
                         break;
                     default:
-                        //convertedParams[MAPPING[key]] = queryParams[key];
+                    //convertedParams[MAPPING[key]] = queryParams[key];
                 }
             }
         }
 
-        await this.updateMQTTData()
+        await this.updateMQTTData();
     }
 
 
-    updatePendingCommands (key, value) {
+    updatePendingCommands(key, value) {
         if (key in COMMAND_MAPPING) {
             if (!this.pendingCommands) {
                 this.pendingCommands = {};
@@ -165,10 +180,10 @@ export class WaterHeater {
             }
         }
 
-        LOGGER.trace({message: "Updated Pending Commands", pendingCommands: this.pendingCommands});
+        LOGGER.trace({ message: "Updated Pending Commands", pendingCommands: this.pendingCommands });
     }
 
-    toResponse () {
+    toResponse() {
         const response = {
             Success: "0",
             ...this.pendingCommands,
@@ -179,19 +194,19 @@ export class WaterHeater {
         return response;
     }
 
-    generateDeviceConfig () {
+    generateDeviceConfig() {
         return {
             device: {
-                "identifiers":[this.deviceId],
-                "name":`Hot Water Heater ${this.deviceId}`,
+                "identifiers": [this.deviceId],
+                "connections": [["mac", this.deviceId.match(/.{1,2}/g).join(":")]],
+                "name": `Hot Water Heater ${this.deviceId}`,
                 "model_id": this.masterModelId,
-                "serial_number": this.deviceId,
                 "sw_version": this.masterFirmwareVersion,
             }
         }
     }
 
-    generateModeMappingTemplate (inverse) {
+    generateModeMappingTemplate(inverse) {
         const mapping = {};
 
         for (const mode of this.availableModes) {
@@ -207,12 +222,12 @@ export class WaterHeater {
         return `{% set lookup = ${JSON.stringify(mapping)} %}{{- lookup[value] -}}`;
     }
 
-    async listenForCommands () {
+    async listenForCommands() {
         await this.mqtt.subscribe(`energysmartbridge/${this.deviceId}/commands/temperature`);
         await this.mqtt.subscribe(`energysmartbridge/${this.deviceId}/commands/mode`);
     }
 
-    async createHomeAssistantConfig () {
+    async createHomeAssistantConfig() {
         await this.mqtt.publish(`homeassistant/water_heater/${this.deviceId}/config`, JSON.stringify({
             // Mode Config
             mode_state_topic: `energysmartbridge/${this.deviceId}/mode`,
@@ -222,23 +237,28 @@ export class WaterHeater {
             mode_command_topic: `energysmartbridge/${this.deviceId}/commands/mode`,
             mode_command_template: this.generateModeMappingTemplate(true),
 
+            optimistic: this.mqtt.optimistic,
+
             // Temperature
             temperature_state_topic: `energysmartbridge/${this.deviceId}/set_point`,
             temperature_command_topic: `energysmartbridge/${this.deviceId}/commands/temperature`,
             current_temperature_topic: `energysmartbridge/${this.deviceId}/current_temperature`,
             max_temp: this.maxSetPoint,
+            temperature_unit: this.units,
 
             unique_id: `${this.deviceId}_water_heater`,
             ...this.generateDeviceConfig(),
-        }), {retain: true});
+        }), { retain: true });
     }
 
-    async updateMQTTData () {
-        //await this.mqtt.publish(`energysmartbridge/${this.deviceId}/upper_temperature`, this.upperTemperature.value);
-        //await this.mqtt.publish(`energysmartbridge/${this.deviceId}/lower_temperature`, this.lowerTemperature.value);
-        await this.mqtt.publish(`energysmartbridge/${this.deviceId}/current_temperature`, ((parseInt(this.sensors.lowerTemperature.value) + parseInt(this.sensors.upperTemperature.value)) / 2).toFixed(0));
+    async updateMQTTData() {
+        if (this.sensors.lowerTemperature && this.sensors.upperTemperature) {
+            await this.mqtt.publish(`energysmartbridge/${this.deviceId}/current_temperature`, ((parseInt(this.sensors.lowerTemperature.value) + parseInt(this.sensors.upperTemperature.value)) / 2).toFixed(0));
+        }
 
-        await this.mqtt.publish(`energysmartbridge/${this.deviceId}/mode`, this.mode);
-        await this.mqtt.publish(`energysmartbridge/${this.deviceId}/set_point`, this.setPoint.toString());
+        if (!this.mqtt.optimistic || !this.pendingCommands || this.pendingCommands[COMMAND_MAPPING['mode']] == null)
+            await this.mqtt.publish(`energysmartbridge/${this.deviceId}/mode`, this.mode);
+        if (this.setPoint != null && (!this.mqtt.optimistic || !this.pendingCommands || this.pendingCommands[COMMAND_MAPPING['temperature']] == null))
+            await this.mqtt.publish(`energysmartbridge/${this.deviceId}/set_point`, this.setPoint.toString());
     }
 }

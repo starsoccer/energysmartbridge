@@ -1,13 +1,12 @@
 name: "Energy Smart Bridge"
 description: "Energy Smart Bridge"
-version: "1.0.10"
+version: "1.0.11"
 slug: "energy_smart_bridge"
 image: "ghcr.io/starsoccer/energysmartbridge/{arch}"
 init: false
 arch:
   - aarch64
   - amd64
-  - armv7
 ports:
   443/tcp: 443
 ports_description:
@@ -19,7 +18,8 @@ options:
   mqtt_password: null
   mqtt_prefix: "energysmartbridge"
   mqtt_homeassistant_prefix: "homeassistant"
-  log_level: list(fatal|error|warn|info|debug|trace)
+  mqtt_optimistic: false
+  log_level: "info"
 schema:
   mqtt_port: port
   mqtt_host: str
@@ -27,4 +27,5 @@ schema:
   mqtt_password: password
   mqtt_prefix: str
   mqtt_homeassistant_prefix: str
+  mqtt_optimistic: bool
   log_level: list(fatal|error|warn|info|debug|trace)

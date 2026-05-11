@@ -7,6 +7,6 @@ echo Env Set
 echo Listing Versions!
 nginx -v
 echo "Node Version: $(node -v)"
-echo "NPM Version: $(npm -v)"
 
-exec nginx -g 'daemon off;' & ./app
+nginx -g 'daemon off;' &
+./app --no-warnings | node /node_modules/.bin/pino-pretty --colorize
