@@ -31,7 +31,7 @@ export class WaterHeater {
     grid;
     airFilterStatus;
     condensePumpFail;
-    availableModes;
+    availableModes = [];
     heating;
     hotWaterVolume;
     leak;
