@@ -9,4 +9,4 @@ nginx -v
 echo "Node Version: $(node -v)"
 
 nginx -g 'daemon off;' &
-./app --no-warnings | node /node_modules/.bin/pino-pretty --colorize --translateTime 'yyyy-mm-dd HH:MM:ss.l'
+./app --no-warnings | node /node_modules/.bin/pino-pretty --colorize --translateTime SYS:standard
